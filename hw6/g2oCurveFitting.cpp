@@ -82,17 +82,23 @@ int main(int argc, char **argv) {
     x_data.push_back(x);
     y_data.push_back(exp(ar * x * x + br * x + cr) + dr * x + rng.gaussian(w_sigma * w_sigma));
   }
+  typedef g2o::BlockSolver<g2o::BlockSolverTraits<2, 1>> Block;
+  Block::LinearSolverType *linearSolver = new g2o::LinearSolverDense<Block::PoseMatrixType>();
+  Block *solver_ptr = new Block(std::unique_ptr<Block::LinearSolverType>(linearSolver));
+  g2o::OptimizationAlgorithmLevenberg *solver = new g2o::OptimizationAlgorithmLevenberg(std::unique_ptr<Block>(solver_ptr));
+  g2o::SparseOptimizer optimizer;
+  optimizer.setAlgorithm(solver);
+  optimizer.setVerbose(true);
+  // // 构建图优化，先设定g2o
+  // typedef g2o::BlockSolver<g2o::BlockSolverTraits<4, 1>> BlockSolverType;  // 每个误差项优化变量维度为4，误差值维度为1
+  // typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType; // 线性求解器类型
 
-  // 构建图优化，先设定g2o
-  typedef g2o::BlockSolver<g2o::BlockSolverTraits<4, 1>> BlockSolverType;  // 每个误差项优化变量维度为4，误差值维度为1
-  typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType; // 线性求解器类型
-
-  // 梯度下降方法，可以从GN, LM, DogLeg 中选
-  auto solver = new g2o::OptimizationAlgorithmGaussNewton(
-    g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
-  g2o::SparseOptimizer optimizer;     // 图模型
-  optimizer.setAlgorithm(solver);   // 设置求解器
-  optimizer.setVerbose(true);       // 打开调试输出
+  // // 梯度下降方法，可以从GN, LM, DogLeg 中选
+  // auto solver = new g2o::OptimizationAlgorithmGaussNewton(
+  //     std::unique_ptr<BlockSolverType>(std::unique_ptr<LinearSolverType>()));
+  // g2o::SparseOptimizer optimizer;     // 图模型
+  // optimizer.setAlgorithm(solver);   // 设置求解器
+  // optimizer.setVerbose(true);       // 打开调试输出
 
   // 往图中增加顶点
   CurveFittingVertex *v = new CurveFittingVertex();
